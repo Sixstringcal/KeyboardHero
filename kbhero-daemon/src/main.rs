@@ -99,36 +99,44 @@ fn linux_main() {
 /// Sets `GDK_BACKEND` when needed, before `gtk4::init()` is called.
 ///
 /// Must be called before any threads are spawned (std::env::set_var is not
-/// thread-safe).  Does nothing when:
-///   - we're on native X11 (GTK already defaults to X11)
-///   - the user has already set GDK_BACKEND themselves
-///   - XWayland is not running (pure Wayland; we stay on the Wayland backend
-///     and the overlay renderer degrades gracefully with a startup warning)
+/// thread-safe).
+///
+/// GNOME Wayland sessions export `GDK_BACKEND=wayland` into every process
+/// environment.  We must override that value — the `GDK_BACKEND` we care
+/// about respecting is an explicit user choice of `x11`, not the compositor's
+/// ambient default.
 #[cfg(target_os = "linux")]
 fn select_gdk_backend() {
     let on_wayland  = std::env::var_os("WAYLAND_DISPLAY").is_some();
-    let user_forced = std::env::var_os("GDK_BACKEND").is_some();
     let xwayland    = std::env::var_os("DISPLAY").is_some();
+    let gdk_backend = std::env::var("GDK_BACKEND").unwrap_or_default();
 
-    if !on_wayland || user_forced {
-        // Native X11, or user already chose a backend — nothing to do.
+    eprintln!("[main] env: WAYLAND_DISPLAY={} DISPLAY={} GDK_BACKEND={:?}",
+        if on_wayland { "set" } else { "unset" },
+        if xwayland   { "set" } else { "unset" },
+        gdk_backend,
+    );
+
+    // Already on native X11, or the user explicitly chose the X11 backend.
+    if !on_wayland || gdk_backend.eq_ignore_ascii_case("x11") {
         return;
     }
 
     // TODO: when gtk4-layer-shell support is added, probe for zwlr_layer_shell_v1
-    // here (via a raw wayland-client connection) and skip the X11 fallback when it
-    // is available.  Layer-shell is strictly better: it works without XWayland and
-    // survives fullscreen surfaces.
+    // here (via a raw wayland-client connection) and prefer the Wayland backend
+    // with layer-shell over the XWayland fallback.
 
     if xwayland {
-        // Fall back to the X11/XWayland backend so override-redirect positioning
-        // works on all Wayland compositors (GNOME, KDE, Sway, Hyprland, …).
+        // Override any compositor-injected GDK_BACKEND (e.g. GNOME sets
+        // "wayland") and use the X11/XWayland backend for override-redirect
+        // window positioning.
         // SAFETY: no threads have been spawned at this call site.
         unsafe { std::env::set_var("GDK_BACKEND", "x11"); }
-        eprintln!("[main] Wayland + XWayland detected; using X11 GDK backend for overlay positioning");
+        eprintln!("[main] forcing GDK_BACKEND=x11 (was {:?}) — XWayland overlay positioning", gdk_backend);
+    } else {
+        eprintln!("[main] pure Wayland (no XWayland) — overlay position controlled by compositor");
     }
-    // else: pure Wayland without XWayland — stay on Wayland backend,
-    // Positioner::Unpositioned will emit a startup warning.
+    // Positioner::detect() will confirm the actual backend after gtk4::init().
 }
 
 // ── Config loading ────────────────────────────────────────────────────────────

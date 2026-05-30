@@ -87,11 +87,13 @@ impl Positioner {
     /// Must be called *after* `gtk4::init()` — that is when GDK has bound to a
     /// backend and its display type name is known.
     fn detect() -> Self {
-        let backend_is_x11 = gtk4::gdk::Display::default()
-            .map(|d| d.type_().name().contains("X11"))
-            .unwrap_or(false);
+        let type_name = gtk4::gdk::Display::default()
+            .map(|d| d.type_().name().to_string())
+            .unwrap_or_else(|| "none".into());
 
-        if backend_is_x11 {
+        eprintln!("[overlay] GDK display type: {type_name}");
+
+        if type_name.contains("X11") {
             Positioner::X11
         } else {
             Positioner::Unpositioned
