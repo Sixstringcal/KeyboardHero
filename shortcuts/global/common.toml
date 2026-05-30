@@ -1,0 +1,98 @@
+schema_version = 1
+# No [app] section — these shortcuts apply to any app via global fallback.
+
+[[shortcuts]]
+menu_path   = ["Edit", "Undo"]
+keys        = [{ linux = "Ctrl+Z", windows = "Ctrl+Z", macos = "⌘Z" }]
+description = "Undo the last action"
+category    = "editing"
+
+[[shortcuts]]
+menu_path   = ["Edit", "Redo"]
+keys        = [{ linux = "Ctrl+Shift+Z", windows = "Ctrl+Y", macos = "⌘⇧Z" }]
+description = "Redo the last undone action"
+category    = "editing"
+
+[[shortcuts]]
+menu_path   = ["Edit", "Cut"]
+keys        = [{ linux = "Ctrl+X", windows = "Ctrl+X", macos = "⌘X" }]
+description = "Cut selection to clipboard"
+category    = "editing"
+
+[[shortcuts]]
+menu_path   = ["Edit", "Copy"]
+keys        = [{ linux = "Ctrl+C", windows = "Ctrl+C", macos = "⌘C" }]
+description = "Copy selection to clipboard"
+category    = "editing"
+
+[[shortcuts]]
+menu_path   = ["Edit", "Paste"]
+keys        = [{ linux = "Ctrl+V", windows = "Ctrl+V", macos = "⌘V" }]
+description = "Paste from clipboard"
+category    = "editing"
+
+[[shortcuts]]
+menu_path   = ["Edit", "Select All"]
+keys        = [{ linux = "Ctrl+A", windows = "Ctrl+A", macos = "⌘A" }]
+description = "Select all content"
+category    = "editing"
+
+[[shortcuts]]
+menu_path   = ["Edit", "Find"]
+keys        = [{ linux = "Ctrl+F", windows = "Ctrl+F", macos = "⌘F" }]
+description = "Open find bar"
+category    = "editing"
+
+[[shortcuts]]
+menu_path   = ["Edit", "Find and Replace"]
+keys        = [{ linux = "Ctrl+H", windows = "Ctrl+H", macos = "⌘H" }]
+description = "Open find and replace"
+category    = "editing"
+
+[[shortcuts]]
+menu_path   = ["File", "Save"]
+keys        = [{ linux = "Ctrl+S", windows = "Ctrl+S", macos = "⌘S" }]
+description = "Save the current file"
+category    = "file"
+
+[[shortcuts]]
+menu_path   = ["File", "Save As"]
+keys        = [{ linux = "Ctrl+Shift+S", windows = "Ctrl+Shift+S", macos = "⌘⇧S" }]
+description = "Save with a new name or location"
+category    = "file"
+
+[[shortcuts]]
+menu_path   = ["File", "Open"]
+keys        = [{ linux = "Ctrl+O", windows = "Ctrl+O", macos = "⌘O" }]
+description = "Open a file"
+category    = "file"
+
+[[shortcuts]]
+menu_path   = ["File", "New"]
+keys        = [{ linux = "Ctrl+N", windows = "Ctrl+N", macos = "⌘N" }]
+description = "Create a new document or window"
+category    = "file"
+
+[[shortcuts]]
+menu_path   = ["File", "Print"]
+keys        = [{ linux = "Ctrl+P", windows = "Ctrl+P", macos = "⌘P" }]
+description = "Print the current document"
+category    = "file"
+
+[[shortcuts]]
+menu_path   = ["File", "Close"]
+keys        = [{ linux = "Ctrl+W", windows = "Ctrl+W", macos = "⌘W" }]
+description = "Close the current window or tab"
+category    = "file"
+
+[[shortcuts]]
+menu_path   = ["File", "Quit"]
+keys        = [{ linux = "Ctrl+Q", windows = "Alt+F4", macos = "⌘Q" }]
+description = "Quit the application"
+category    = "file"
+
+[[shortcuts]]
+menu_path   = ["Help", "About"]
+keys        = [{ linux = "F1", windows = "F1", macos = "F1" }]
+description = "Open help"
+category    = "tools"

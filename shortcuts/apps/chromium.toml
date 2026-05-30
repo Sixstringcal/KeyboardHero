@@ -1,0 +1,133 @@
+schema_version = 1
+
+[app]
+id            = "chromium"
+executables   = ["chromium", "chromium-browser", "google-chrome", "google-chrome-stable", "chrome.exe"]
+title_pattern = ""
+
+[[shortcuts]]
+menu_path   = ["File", "New Tab"]
+keys        = [{ linux = "Ctrl+T", windows = "Ctrl+T", macos = "⌘T" }]
+description = "Open a new tab"
+category    = "navigation"
+
+[[shortcuts]]
+menu_path   = ["File", "New Window"]
+keys        = [{ linux = "Ctrl+N", windows = "Ctrl+N", macos = "⌘N" }]
+description = "Open a new browser window"
+category    = "navigation"
+
+[[shortcuts]]
+menu_path   = ["File", "New Incognito Window"]
+keys        = [{ linux = "Ctrl+Shift+N", windows = "Ctrl+Shift+N", macos = "⌘⇧N" }]
+description = "Open a new incognito window"
+category    = "navigation"
+
+[[shortcuts]]
+menu_path   = ["File", "Open File"]
+keys        = [{ linux = "Ctrl+O", windows = "Ctrl+O", macos = "⌘O" }]
+description = "Open a local file in the browser"
+category    = "file"
+
+[[shortcuts]]
+menu_path   = ["File", "Close Tab"]
+keys        = [{ linux = "Ctrl+W", windows = "Ctrl+W", macos = "⌘W" }]
+description = "Close the current tab"
+category    = "navigation"
+
+[[shortcuts]]
+menu_path   = ["File", "Close Window"]
+keys        = [{ linux = "Ctrl+Shift+W", windows = "Ctrl+Shift+W", macos = "⌘⇧W" }]
+description = "Close the current window"
+category    = "navigation"
+
+[[shortcuts]]
+menu_path   = ["File", "Save Page As"]
+keys        = [{ linux = "Ctrl+S", windows = "Ctrl+S", macos = "⌘S" }]
+description = "Save the current page to disk"
+category    = "file"
+
+[[shortcuts]]
+menu_path   = ["File", "Print"]
+keys        = [{ linux = "Ctrl+P", windows = "Ctrl+P", macos = "⌘P" }]
+description = "Print the current page"
+category    = "file"
+
+[[shortcuts]]
+menu_path   = ["Edit", "Find"]
+keys        = [{ linux = "Ctrl+F", windows = "Ctrl+F", macos = "⌘F" }]
+description = "Find text on the page"
+category    = "editing"
+
+[[shortcuts]]
+menu_path   = ["View", "Reload"]
+keys        = [{ linux = "Ctrl+R", windows = "Ctrl+R", macos = "⌘R" }]
+description = "Reload the current page"
+category    = "navigation"
+
+[[shortcuts]]
+menu_path   = ["View", "Full Screen"]
+keys        = [{ linux = "F11", windows = "F11", macos = "F11" }]
+description = "Toggle full screen mode"
+category    = "view"
+
+[[shortcuts]]
+menu_path   = ["View", "Zoom", "Zoom In"]
+keys        = [{ linux = "Ctrl++", windows = "Ctrl++", macos = "⌘+" }]
+description = "Zoom in"
+category    = "view"
+
+[[shortcuts]]
+menu_path   = ["View", "Zoom", "Zoom Out"]
+keys        = [{ linux = "Ctrl+-", windows = "Ctrl+-", macos = "⌘-" }]
+description = "Zoom out"
+category    = "view"
+
+[[shortcuts]]
+menu_path   = ["View", "Zoom", "Reset Zoom"]
+keys        = [{ linux = "Ctrl+0", windows = "Ctrl+0", macos = "⌘0" }]
+description = "Reset zoom to 100%"
+category    = "view"
+
+[[shortcuts]]
+menu_path   = ["View", "Developer", "Developer Tools"]
+keys        = [{ linux = "F12", windows = "F12", macos = "F12" }]
+description = "Open developer tools"
+category    = "tools"
+
+[[shortcuts]]
+menu_path   = ["View", "Developer", "JavaScript Console"]
+keys        = [{ linux = "Ctrl+Shift+J", windows = "Ctrl+Shift+J", macos = "⌘⌥J" }]
+description = "Open the JavaScript console"
+category    = "tools"
+
+[[shortcuts]]
+menu_path   = ["History", "Show Full History"]
+keys        = [{ linux = "Ctrl+H", windows = "Ctrl+H", macos = "⌘Y" }]
+description = "Show browsing history"
+category    = "navigation"
+
+[[shortcuts]]
+menu_path   = ["Bookmarks", "Bookmark This Tab"]
+keys        = [{ linux = "Ctrl+D", windows = "Ctrl+D", macos = "⌘D" }]
+description = "Bookmark the current tab"
+category    = "navigation"
+
+[[shortcuts]]
+menu_path   = ["Bookmarks", "Bookmark All Tabs"]
+keys        = [{ linux = "Ctrl+Shift+D", windows = "Ctrl+Shift+D", macos = "⌘⇧D" }]
+description = "Bookmark all open tabs"
+category    = "navigation"
+
+[[shortcuts]]
+menu_path   = ["Bookmarks", "Bookmark Manager"]
+keys        = [{ linux = "Ctrl+Shift+O", windows = "Ctrl+Shift+O", macos = "⌘⌥B" }]
+description = "Open the bookmark manager"
+category    = "navigation"
+
+[[semantic_actions]]
+role        = "tab"
+context     = "tab-not-selected"
+keys        = [{ linux = "Ctrl+Tab", windows = "Ctrl+Tab", macos = "⌃Tab" }]
+description = "Switch to next/previous tab"
+category    = "navigation"

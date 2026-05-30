@@ -1,0 +1,66 @@
+schema_version = 1
+
+[app]
+id            = "gnome-text-editor"
+executables   = ["gnome-text-editor"]
+title_pattern = ""
+
+[[shortcuts]]
+menu_path   = ["File", "New Document"]
+keys        = [{ linux = "Ctrl+N", windows = "Ctrl+N", macos = "⌘N" }]
+description = "Create a new document"
+category    = "file"
+
+[[shortcuts]]
+menu_path   = ["File", "Open"]
+keys        = [{ linux = "Ctrl+O", windows = "Ctrl+O", macos = "⌘O" }]
+description = "Open an existing file"
+category    = "file"
+
+[[shortcuts]]
+menu_path   = ["File", "Save"]
+keys        = [{ linux = "Ctrl+S", windows = "Ctrl+S", macos = "⌘S" }]
+description = "Save the current document"
+category    = "file"
+
+[[shortcuts]]
+menu_path   = ["File", "Save As"]
+keys        = [{ linux = "Ctrl+Shift+S", windows = "Ctrl+Shift+S", macos = "⌘⇧S" }]
+description = "Save with a new name"
+category    = "file"
+
+[[shortcuts]]
+menu_path   = ["File", "Print"]
+keys        = [{ linux = "Ctrl+P", windows = "Ctrl+P", macos = "⌘P" }]
+description = "Print the document"
+category    = "file"
+
+[[shortcuts]]
+menu_path   = ["Find", "Find"]
+keys        = [{ linux = "Ctrl+F", windows = "Ctrl+F", macos = "⌘F" }]
+description = "Find text in the document"
+category    = "editing"
+
+[[shortcuts]]
+menu_path   = ["Find", "Find and Replace"]
+keys        = [{ linux = "Ctrl+H", windows = "Ctrl+H", macos = "⌘H" }]
+description = "Find and replace text"
+category    = "editing"
+
+[[shortcuts]]
+menu_path   = ["View", "Zoom In"]
+keys        = [{ linux = "Ctrl++", windows = "Ctrl++", macos = "⌘+" }]
+description = "Increase text size"
+category    = "view"
+
+[[shortcuts]]
+menu_path   = ["View", "Zoom Out"]
+keys        = [{ linux = "Ctrl+-", windows = "Ctrl+-", macos = "⌘-" }]
+description = "Decrease text size"
+category    = "view"
+
+[[shortcuts]]
+menu_path   = ["View", "Reset Zoom"]
+keys        = [{ linux = "Ctrl+0", windows = "Ctrl+0", macos = "⌘0" }]
+description = "Reset text size to default"
+category    = "view"

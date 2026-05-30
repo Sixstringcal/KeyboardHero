@@ -1,0 +1,22 @@
+[workspace]
+members = [
+    "kbhero-core",
+    "kbhero-linux",
+    "kbhero-windows",
+    "kbhero-macos",
+    "kbhero-daemon",
+]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["Calvin Nielson <sixstringcal@gmail.com>"]
+
+[workspace.dependencies]
+serde = { version = "1", features = ["derive"] }
+toml = "0.8"
+regex = "1"
+thiserror = "1"
+tokio = { version = "1", features = ["sync", "rt-multi-thread", "macros", "time"] }
+kbhero-core = { path = "kbhero-core" }

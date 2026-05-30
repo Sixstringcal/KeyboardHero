@@ -1,0 +1,102 @@
+schema_version = 1
+
+[app]
+id            = "nautilus"
+executables   = ["nautilus", "org.gnome.Nautilus"]
+title_pattern = ""
+
+[[shortcuts]]
+menu_path   = ["File", "New Tab"]
+keys        = [{ linux = "Ctrl+T", windows = "Ctrl+T", macos = "⌘T" }]
+description = "Open a new tab"
+category    = "navigation"
+
+[[shortcuts]]
+menu_path   = ["File", "New Window"]
+keys        = [{ linux = "Ctrl+N", windows = "Ctrl+N", macos = "⌘N" }]
+description = "Open a new file manager window"
+category    = "navigation"
+
+[[shortcuts]]
+menu_path   = ["File", "New Folder"]
+keys        = [{ linux = "Ctrl+Shift+N", windows = "Ctrl+Shift+N", macos = "⌘⇧N" }]
+description = "Create a new folder"
+category    = "file"
+
+[[shortcuts]]
+menu_path   = ["Edit", "Copy"]
+keys        = [{ linux = "Ctrl+C", windows = "Ctrl+C", macos = "⌘C" }]
+description = "Copy selected files"
+category    = "editing"
+
+[[shortcuts]]
+menu_path   = ["Edit", "Cut"]
+keys        = [{ linux = "Ctrl+X", windows = "Ctrl+X", macos = "⌘X" }]
+description = "Cut selected files"
+category    = "editing"
+
+[[shortcuts]]
+menu_path   = ["Edit", "Paste"]
+keys        = [{ linux = "Ctrl+V", windows = "Ctrl+V", macos = "⌘V" }]
+description = "Paste files"
+category    = "editing"
+
+[[shortcuts]]
+menu_path   = ["Edit", "Select All"]
+keys        = [{ linux = "Ctrl+A", windows = "Ctrl+A", macos = "⌘A" }]
+description = "Select all files"
+category    = "editing"
+
+[[shortcuts]]
+menu_path   = ["Edit", "Move to Trash"]
+keys        = [{ linux = "Delete", windows = "Delete", macos = "⌘Delete" }]
+description = "Move selected files to trash"
+category    = "editing"
+
+[[shortcuts]]
+menu_path   = ["View", "Show Hidden Files"]
+keys        = [{ linux = "Ctrl+H", windows = "Ctrl+H", macos = "⌘⇧." }]
+description = "Toggle visibility of hidden files"
+category    = "view"
+
+[[shortcuts]]
+menu_path   = ["View", "Zoom In"]
+keys        = [{ linux = "Ctrl++", windows = "Ctrl++", macos = "⌘+" }]
+description = "Increase icon size"
+category    = "view"
+
+[[shortcuts]]
+menu_path   = ["View", "Zoom Out"]
+keys        = [{ linux = "Ctrl+-", windows = "Ctrl+-", macos = "⌘-" }]
+description = "Decrease icon size"
+category    = "view"
+
+[[shortcuts]]
+menu_path   = ["Go", "Home"]
+keys        = [{ linux = "Alt+Home", windows = "Alt+Home", macos = "⌘⇧H" }]
+description = "Navigate to home folder"
+category    = "navigation"
+
+[[shortcuts]]
+menu_path   = ["Go", "Back"]
+keys        = [{ linux = "Alt+Left", windows = "Alt+Left", macos = "⌘[" }]
+description = "Navigate back"
+category    = "navigation"
+
+[[shortcuts]]
+menu_path   = ["Go", "Forward"]
+keys        = [{ linux = "Alt+Right", windows = "Alt+Right", macos = "⌘]" }]
+description = "Navigate forward"
+category    = "navigation"
+
+[[shortcuts]]
+menu_path   = ["Go", "Parent Folder"]
+keys        = [{ linux = "Alt+Up", windows = "Alt+Up", macos = "⌘↑" }]
+description = "Navigate to the parent folder"
+category    = "navigation"
+
+[[shortcuts]]
+menu_path   = ["Go", "Enter Location"]
+keys        = [{ linux = "Ctrl+L", windows = "Ctrl+L", macos = "⌘L" }]
+description = "Type a location path directly"
+category    = "navigation"

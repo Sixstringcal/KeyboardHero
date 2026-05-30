@@ -1,0 +1,168 @@
+schema_version = 1
+
+[app]
+id            = "vscode"
+executables   = ["code", "code-oss", "codium", "Code.exe"]
+title_pattern = ""
+
+[[shortcuts]]
+menu_path   = ["File", "New Text File"]
+keys        = [{ linux = "Ctrl+N", windows = "Ctrl+N", macos = "⌘N" }]
+description = "Open a new untitled text file"
+category    = "file"
+
+[[shortcuts]]
+menu_path   = ["File", "Open File"]
+keys        = [{ linux = "Ctrl+O", windows = "Ctrl+O", macos = "⌘O" }]
+description = "Open an existing file"
+category    = "file"
+
+[[shortcuts]]
+menu_path   = ["File", "Save"]
+keys        = [{ linux = "Ctrl+S", windows = "Ctrl+S", macos = "⌘S" }]
+description = "Save the current file"
+category    = "file"
+
+[[shortcuts]]
+menu_path   = ["File", "Save As"]
+keys        = [{ linux = "Ctrl+Shift+S", windows = "Ctrl+Shift+S", macos = "⌘⇧S" }]
+description = "Save with a new name or location"
+category    = "file"
+
+[[shortcuts]]
+menu_path   = ["File", "Save All"]
+keys        = [{ linux = "Ctrl+K S", windows = "Ctrl+K S", macos = "⌘⌥S" }]
+description = "Save all open files"
+category    = "file"
+
+[[shortcuts]]
+menu_path   = ["File", "Close Editor"]
+keys        = [{ linux = "Ctrl+W", windows = "Ctrl+W", macos = "⌘W" }]
+description = "Close the active editor"
+category    = "file"
+
+[[shortcuts]]
+menu_path   = ["File", "Close Window"]
+keys        = [{ linux = "Ctrl+Shift+W", windows = "Ctrl+Shift+W", macos = "⌘⇧W" }]
+description = "Close the current window"
+category    = "file"
+
+[[shortcuts]]
+menu_path   = ["Edit", "Undo"]
+keys        = [{ linux = "Ctrl+Z", windows = "Ctrl+Z", macos = "⌘Z" }]
+description = "Undo the last edit"
+category    = "editing"
+
+[[shortcuts]]
+menu_path   = ["Edit", "Redo"]
+keys        = [{ linux = "Ctrl+Shift+Z", windows = "Ctrl+Y", macos = "⌘⇧Z" }]
+description = "Redo the last undone edit"
+category    = "editing"
+
+[[shortcuts]]
+menu_path   = ["Edit", "Cut"]
+keys        = [{ linux = "Ctrl+X", windows = "Ctrl+X", macos = "⌘X" }]
+description = "Cut selection"
+category    = "editing"
+
+[[shortcuts]]
+menu_path   = ["Edit", "Copy"]
+keys        = [{ linux = "Ctrl+C", windows = "Ctrl+C", macos = "⌘C" }]
+description = "Copy selection"
+category    = "editing"
+
+[[shortcuts]]
+menu_path   = ["Edit", "Paste"]
+keys        = [{ linux = "Ctrl+V", windows = "Ctrl+V", macos = "⌘V" }]
+description = "Paste from clipboard"
+category    = "editing"
+
+[[shortcuts]]
+menu_path   = ["Edit", "Find"]
+keys        = [{ linux = "Ctrl+F", windows = "Ctrl+F", macos = "⌘F" }]
+description = "Find in current file"
+category    = "editing"
+
+[[shortcuts]]
+menu_path   = ["Edit", "Replace"]
+keys        = [{ linux = "Ctrl+H", windows = "Ctrl+H", macos = "⌘H" }]
+description = "Find and replace in current file"
+category    = "editing"
+
+[[shortcuts]]
+menu_path   = ["Edit", "Go to Line"]
+keys        = [{ linux = "Ctrl+G", windows = "Ctrl+G", macos = "⌃G" }]
+description = "Jump to a specific line number"
+category    = "navigation"
+
+[[shortcuts]]
+menu_path   = ["Selection", "Select All"]
+keys        = [{ linux = "Ctrl+A", windows = "Ctrl+A", macos = "⌘A" }]
+description = "Select all text in the editor"
+category    = "editing"
+
+[[shortcuts]]
+menu_path   = ["View", "Command Palette"]
+keys        = [{ linux = "Ctrl+Shift+P", windows = "Ctrl+Shift+P", macos = "⌘⇧P" }]
+description = "Open the command palette"
+category    = "tools"
+
+[[shortcuts]]
+menu_path   = ["View", "Terminal"]
+keys        = [{ linux = "Ctrl+`", windows = "Ctrl+`", macos = "⌃`" }]
+description = "Toggle the integrated terminal"
+category    = "tools"
+
+[[shortcuts]]
+menu_path   = ["View", "Explorer"]
+keys        = [{ linux = "Ctrl+Shift+E", windows = "Ctrl+Shift+E", macos = "⌘⇧E" }]
+description = "Toggle the Explorer sidebar"
+category    = "view"
+
+[[shortcuts]]
+menu_path   = ["View", "Source Control"]
+keys        = [{ linux = "Ctrl+Shift+G", windows = "Ctrl+Shift+G", macos = "⌃⇧G" }]
+description = "Toggle the Source Control sidebar"
+category    = "view"
+
+[[shortcuts]]
+menu_path   = ["View", "Extensions"]
+keys        = [{ linux = "Ctrl+Shift+X", windows = "Ctrl+Shift+X", macos = "⌘⇧X" }]
+description = "Toggle the Extensions sidebar"
+category    = "view"
+
+[[shortcuts]]
+menu_path   = ["View", "Problems"]
+keys        = [{ linux = "Ctrl+Shift+M", windows = "Ctrl+Shift+M", macos = "⌘⇧M" }]
+description = "Toggle the Problems panel"
+category    = "view"
+
+[[shortcuts]]
+menu_path   = ["Go", "Go to File"]
+keys        = [{ linux = "Ctrl+P", windows = "Ctrl+P", macos = "⌘P" }]
+description = "Quick open a file by name"
+category    = "navigation"
+
+[[shortcuts]]
+menu_path   = ["Go", "Go to Symbol in Workspace"]
+keys        = [{ linux = "Ctrl+T", windows = "Ctrl+T", macos = "⌘T" }]
+description = "Go to a symbol across the workspace"
+category    = "navigation"
+
+[[shortcuts]]
+menu_path   = ["Go", "Go to Definition"]
+keys        = [{ linux = "F12", windows = "F12", macos = "F12" }]
+description = "Go to the definition of the symbol under the cursor"
+category    = "navigation"
+
+[[shortcuts]]
+menu_path   = ["Run", "Start Debugging"]
+keys        = [{ linux = "F5", windows = "F5", macos = "F5" }]
+description = "Start or continue debugging"
+category    = "tools"
+
+[[shortcuts]]
+menu_path   = ["Run", "Run Without Debugging"]
+keys        = [{ linux = "Ctrl+F5", windows = "Ctrl+F5", macos = "⌃F5" }]
+description = "Run the program without the debugger"
+category    = "tools"

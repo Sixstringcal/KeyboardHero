@@ -1,0 +1,22 @@
+# KeyboardHero shortcut database — schema documentation
+#
+# Each app file must declare:
+#   schema_version = 1
+#
+# Optional [app] section (absent for global files):
+#   id            — unique snake_case identifier
+#   executables   — list of process names (case-insensitive)
+#   title_pattern — optional regex matched against the window title
+#
+# [[shortcuts]] entries:
+#   menu_path   — ordered list of menu labels from root to the item
+#   keys        — array of exactly one object with per-platform key strings
+#   description — human-readable action description
+#   category    — one of: editing, navigation, view, file, tools
+#
+# [[semantic_actions]] entries:
+#   role        — accessibility role string (e.g. "tab", "button")
+#   context     — optional context string that disambiguates the action
+#   keys        — same as shortcuts
+#   description — human-readable action description
+#   category    — same as shortcuts

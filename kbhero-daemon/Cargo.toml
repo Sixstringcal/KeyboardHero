@@ -1,0 +1,22 @@
+[package]
+name    = "kbhero-daemon"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+
+[[bin]]
+name = "keyboardhero"
+path = "src/main.rs"
+
+[dependencies]
+kbhero-core = { workspace = true }
+tokio       = { workspace = true }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+kbhero-linux = { path = "../kbhero-linux" }
+
+[target.'cfg(target_os = "windows")'.dependencies]
+kbhero-windows = { path = "../kbhero-windows" }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+kbhero-macos = { path = "../kbhero-macos" }

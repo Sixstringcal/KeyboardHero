@@ -1,0 +1,9 @@
+[package]
+name    = "kbhero-macos"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+
+[dependencies]
+kbhero-core = { workspace = true }
+tokio       = { workspace = true }
