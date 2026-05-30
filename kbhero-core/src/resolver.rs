@@ -52,9 +52,29 @@ impl ShortcutResolver {
             | ElementRole::ContextMenuItem => {
                 // Tier 1: use the shortcut the app already advertised, if present.
                 if let Some(raw) = &event.discovered_shortcut {
+                    let shortcut_keys = normalize_shortcut(raw);
+                    let action_name   = event.label_path.last().cloned().unwrap_or_default();
+
+                    // When the accessibility API gave us a shortcut but no label
+                    // (e.g. gnome-text-editor omits accessible names), fill in the
+                    // action name and description from the database reverse index.
+                    if action_name.is_empty() {
+                        if let Some(db) = self.db.lookup_by_shortcut(&event.app, &shortcut_keys, self.platform) {
+                            let m = ShortcutMatch {
+                                shortcut_keys,
+                                action_name:  db.action_name,
+                                description:  db.description,
+                                menu_path:    db.menu_path,
+                                source:       ResolutionSource::Dynamic,
+                            };
+                            eprintln!("[resolve] Tier1+DB shortcut={:?} action={:?}", m.shortcut_keys, m.action_name);
+                            return Some(m);
+                        }
+                    }
+
                     let m = ShortcutMatch {
-                        shortcut_keys: raw.clone(),
-                        action_name:   event.label_path.last().cloned().unwrap_or_default(),
+                        shortcut_keys,
+                        action_name,
                         description:   String::new(),
                         menu_path:     event.label_path.join(" › "),
                         source:        ResolutionSource::Dynamic,
@@ -81,6 +101,48 @@ impl ShortcutResolver {
             }
         }
     }
+}
+
+// ── Shortcut normalization ─────────────────────────────────────────────────────
+
+/// Converts an AT-SPI2 / ARIA shortcut string into the display form used by
+/// the callout renderer.
+///
+/// AT-SPI2 uses GLib key names ("Control+N", "shift+alt+F4").  The database
+/// already stores shortcuts in display form ("Ctrl+C"), so this is only applied
+/// to Tier 1 dynamically-discovered shortcuts.
+fn normalize_shortcut(raw: &str) -> String {
+    raw.split('+')
+        .map(|part| match part.trim() {
+            // Modifier keys
+            "Control" | "control" => "Ctrl",
+            "Shift"   | "shift"   => "Shift",
+            "Alt"     | "alt"     => "Alt",
+            "Super"   | "super"
+            | "Meta"  | "meta"
+            | "Win"   | "win"     => "Super",
+
+            // Special keys
+            "Return" | "KP_Enter"     => "Enter",
+            "Escape"                  => "Esc",
+            "Delete"                  => "Del",
+            "BackSpace" | "Backspace" => "Backspace",
+            "Tab"                     => "Tab",
+            "space"                   => "Space",
+            "Up"                      => "↑",
+            "Down"                    => "↓",
+            "Left"                    => "←",
+            "Right"                   => "→",
+            "Home"                    => "Home",
+            "End"                     => "End",
+            "Page_Up"                 => "PgUp",
+            "Page_Down"               => "PgDn",
+
+            // Everything else (letter keys, F-keys, symbols) passes through as-is.
+            other => other,
+        })
+        .collect::<Vec<_>>()
+        .join("+")
 }
 
 #[cfg(test)]

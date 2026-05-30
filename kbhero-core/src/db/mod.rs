@@ -42,8 +42,19 @@ struct SemanticKey {
     context:  Option<String>,
 }
 
+/// Reverse index key: look up a menu entry by its shortcut string.
+/// The shortcut is stored in canonical form (modifiers sorted Ctrl→Alt→Shift→Super)
+/// so that "Shift+Ctrl+Z" and "Ctrl+Shift+Z" hash to the same entry.
+#[derive(Hash, PartialEq, Eq)]
+struct ShortcutRevKey {
+    app_id:    AppId,
+    platform:  Platform,
+    canonical: String,
+}
+
 // ── Internal entry types ─────────────────────────────────────────────────────
 
+#[derive(Clone)]
 struct MenuEntry {
     keys:              String,
     description:       String,
@@ -63,6 +74,9 @@ pub struct ShortcutDatabase {
     matcher:        AppMatcher,
     menu_table:     HashMap<MenuKey, MenuEntry>,
     semantic_table: HashMap<SemanticKey, SemanticEntry>,
+    /// Reverse index: shortcut string → menu entry.  Used when the accessibility
+    /// API supplies a shortcut but not an action name (e.g. gnome-text-editor).
+    shortcut_rev:   HashMap<ShortcutRevKey, MenuEntry>,
 }
 
 impl ShortcutDatabase {
@@ -72,6 +86,7 @@ impl ShortcutDatabase {
             matcher:        AppMatcher::new(),
             menu_table:     HashMap::new(),
             semantic_table: HashMap::new(),
+            shortcut_rev:   HashMap::new(),
         };
 
         let mut next_id: u32 = 1;
@@ -108,14 +123,22 @@ impl ShortcutDatabase {
 
                 for (platform, keys_opt) in platform_iter(keys_def) {
                     let Some(keys) = keys_opt else { continue };
+                    let entry = MenuEntry {
+                        keys:              keys.clone(),
+                        description:       shortcut.description.clone(),
+                        action_name:       action_name.clone(),
+                        menu_path_display: display_path.clone(),
+                    };
+                    // Reverse index: canonical shortcut → entry (first entry wins per key)
+                    let rev_key = ShortcutRevKey {
+                        app_id,
+                        platform,
+                        canonical: canonicalize_shortcut(&keys),
+                    };
+                    db.shortcut_rev.entry(rev_key).or_insert_with(|| entry.clone());
                     db.menu_table.insert(
                         MenuKey { app_id, platform, path: normalized.clone() },
-                        MenuEntry {
-                            keys,
-                            description:       shortcut.description.clone(),
-                            action_name:       action_name.clone(),
-                            menu_path_display: display_path.clone(),
-                        },
+                        entry,
                     );
                 }
             }
@@ -200,9 +223,59 @@ impl ShortcutDatabase {
         self.semantic_table.get(&global_key)
             .map(|e| e.to_match(ResolutionSource::Database))
     }
+
+    /// Look up a menu entry by its shortcut string, trying the app-specific
+    /// table first then the global fallback.
+    ///
+    /// Used when Tier 1 (accessibility API) supplies a shortcut but not an
+    /// action name, so we can fill in the label from the database.
+    pub fn lookup_by_shortcut(
+        &self,
+        app:      &AppIdentity,
+        shortcut: &str,
+        platform: Platform,
+    ) -> Option<ShortcutMatch> {
+        let canonical = canonicalize_shortcut(shortcut);
+
+        if let Some(app_id) = self.matcher.resolve(app) {
+            let key = ShortcutRevKey { app_id, platform, canonical: canonical.clone() };
+            if let Some(entry) = self.shortcut_rev.get(&key) {
+                return Some(entry.to_match(ResolutionSource::Database));
+            }
+        }
+
+        let global_key = ShortcutRevKey { app_id: GLOBAL_APP_ID, platform, canonical };
+        self.shortcut_rev.get(&global_key)
+            .map(|e| e.to_match(ResolutionSource::Database))
+    }
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
+
+/// Returns a canonical form of a shortcut string for index keys.
+///
+/// Modifiers are sorted in the order Ctrl → Alt → Shift → Super; the primary
+/// key follows.  This makes "Shift+Ctrl+Z" and "Ctrl+Shift+Z" hash identically.
+fn canonicalize_shortcut(s: &str) -> String {
+    const ORDER: &[&str] = &["Ctrl", "Alt", "Shift", "Super"];
+    let mut modifiers: Vec<&str> = Vec::new();
+    let mut key: &str = "";
+
+    for part in s.split('+') {
+        let p = part.trim();
+        if ORDER.contains(&p) {
+            modifiers.push(p);
+        } else if !p.is_empty() {
+            key = p;
+        }
+    }
+
+    modifiers.sort_by_key(|m| ORDER.iter().position(|o| o == m).unwrap_or(usize::MAX));
+
+    let mut parts: Vec<&str> = modifiers;
+    if !key.is_empty() { parts.push(key); }
+    parts.join("+")
+}
 
 fn normalize_segment(s: &str) -> String {
     s.trim()

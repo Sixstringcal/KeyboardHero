@@ -26,6 +26,20 @@ fn linux_main() {
     use kbhero_linux::{detection::AtSpi2Engine, overlay};
     use kbhero_linux::overlay::CalloutMsg;
 
+    // Choose GDK backend before GTK initialises (and before any threads start).
+    //
+    // Preferred order:
+    //   1. gtk4-layer-shell   — proper Wayland anchoring (KDE, Sway, Hyprland…)
+    //                           TODO: implement when gtk4-layer-shell crate is available
+    //   2. XWayland (X11 via GDK_BACKEND=x11)
+    //                         — override-redirect positioning; works on GNOME Wayland and
+    //                           any other compositor that runs XWayland
+    //   3. Unpositioned       — pure Wayland without XWayland; window position is
+    //                           compositor-controlled (graceful fallback, logged at startup)
+    //
+    // SAFETY: set_var is called before any threads are spawned.
+    select_gdk_backend();
+
     let db = Arc::new(ShortcutDatabase::build().expect("shortcut database must be valid"));
     let cfg = load_config();
     let duration_ms = cfg.display.callout_duration_ms;
@@ -78,6 +92,43 @@ fn linux_main() {
 
     // GTK main loop — blocks until the process is killed or the window closes
     overlay::run(glib_rx);
+}
+
+// ── Backend selection ─────────────────────────────────────────────────────────
+
+/// Sets `GDK_BACKEND` when needed, before `gtk4::init()` is called.
+///
+/// Must be called before any threads are spawned (std::env::set_var is not
+/// thread-safe).  Does nothing when:
+///   - we're on native X11 (GTK already defaults to X11)
+///   - the user has already set GDK_BACKEND themselves
+///   - XWayland is not running (pure Wayland; we stay on the Wayland backend
+///     and the overlay renderer degrades gracefully with a startup warning)
+#[cfg(target_os = "linux")]
+fn select_gdk_backend() {
+    let on_wayland  = std::env::var_os("WAYLAND_DISPLAY").is_some();
+    let user_forced = std::env::var_os("GDK_BACKEND").is_some();
+    let xwayland    = std::env::var_os("DISPLAY").is_some();
+
+    if !on_wayland || user_forced {
+        // Native X11, or user already chose a backend — nothing to do.
+        return;
+    }
+
+    // TODO: when gtk4-layer-shell support is added, probe for zwlr_layer_shell_v1
+    // here (via a raw wayland-client connection) and skip the X11 fallback when it
+    // is available.  Layer-shell is strictly better: it works without XWayland and
+    // survives fullscreen surfaces.
+
+    if xwayland {
+        // Fall back to the X11/XWayland backend so override-redirect positioning
+        // works on all Wayland compositors (GNOME, KDE, Sway, Hyprland, …).
+        // SAFETY: no threads have been spawned at this call site.
+        unsafe { std::env::set_var("GDK_BACKEND", "x11"); }
+        eprintln!("[main] Wayland + XWayland detected; using X11 GDK backend for overlay positioning");
+    }
+    // else: pure Wayland without XWayland — stay on Wayland backend,
+    // Positioner::Unpositioned will emit a startup warning.
 }
 
 // ── Config loading ────────────────────────────────────────────────────────────

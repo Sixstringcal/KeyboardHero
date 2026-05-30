@@ -1,11 +1,11 @@
 #![cfg(target_os = "linux")]
 
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use atspi::{
     events::{Event, EventProperties, ObjectEvents},
     proxy::{accessible::AccessibleProxy, action::ActionProxy},
-    AccessibilityConnection, Role, State,
+    AccessibilityConnection, Role, State, StateSet,
 };
 use futures_lite::StreamExt;
 use kbhero_core::types::{AppIdentity, ElementRole, RawActivationEvent};
@@ -25,40 +25,97 @@ pub struct AtSpi2Engine {
 }
 
 impl AtSpi2Engine {
-    /// Connect to the AT-SPI2 accessibility bus and subscribe to state-change events.
     pub async fn connect() -> Result<Self, EngineError> {
         eprintln!("[engine] connect(): opening AT-SPI2 connection...");
         let conn = AccessibilityConnection::new().await?;
-        eprintln!("[engine] connect(): connection opened, registering event...");
         conn.register_event::<atspi::events::object::StateChangedEvent>().await?;
         eprintln!("[engine] connect(): registered. Engine ready.");
         let zbus = conn.inner().connection().clone();
         Ok(Self { conn, zbus })
     }
 
-    /// Consume accessibility events, mapping each menu-item selection to a
-    /// `RawActivationEvent`, until the AT-SPI2 bus disconnects.
+    /// Consume accessibility events until the AT-SPI2 bus disconnects.
+    ///
+    /// # Click vs hover detection
+    ///
+    /// 1. **Candidate phase:** On `Selected/Focused=true` for a menu item,
+    ///    build the event and park it.  The item's parent must be a `Menu` or
+    ///    `PopupMenu` accessible — this is the key filter that rejects toolbar
+    ///    focus events, programmatic state updates after an action, and any
+    ///    focus change that happens after the menu has already closed.
+    ///
+    /// 2. **Commit phase:** When the candidate item loses its
+    ///    `Selected/Focused` state we start a 100 ms debounce.  If no new
+    ///    menu item is selected in that window the menu has closed and we emit.
     pub async fn run(self, tx: mpsc::Sender<RawActivationEvent>) {
         eprintln!("[engine] run() started, waiting for AT-SPI2 events...");
+
+        struct Candidate {
+            item_sender: String,
+            item_path:   String,
+            event:       RawActivationEvent,
+        }
+
+        let mut candidate: Option<Candidate> = None;
+        let (debounce_tx, mut debounce_rx) = mpsc::channel::<RawActivationEvent>(4);
         let mut stream = self.conn.event_stream();
-        let mut total = 0u64;
-        while let Some(result) = stream.next().await {
-            total += 1;
-            let ev = match result {
-                Ok(Event::Object(ObjectEvents::StateChanged(ev))) => ev,
-                Ok(_) => continue,
-                Err(e) => { eprintln!("[engine] stream error: {e}"); continue; }
-            };
-            eprintln!("[engine] StateChanged state={:?} enabled={}", ev.state, ev.enabled);
-            // GTK4 uses Focused=true on MenuItem; GTK3/others use Selected=true.
-            if !matches!(ev.state, State::Selected | State::Focused) || !ev.enabled {
-                continue;
-            }
-            if let Some(raw) = build_event(&self.zbus, ev).await {
-                let _ = tx.send(raw).await;
+
+        loop {
+            tokio::select! {
+                result = stream.next() => {
+                    let ev = match result {
+                        Some(Ok(Event::Object(ObjectEvents::StateChanged(ev)))) => ev,
+                        Some(Ok(_))  => continue,
+                        Some(Err(e)) => { eprintln!("[engine] stream error: {e}"); continue; }
+                        None         => break,
+                    };
+
+                    let sender = ev.sender().to_string();
+                    let path   = ev.path().to_string();
+
+                    match (ev.state, ev.enabled) {
+                        (State::Selected | State::Focused, true) => {
+                            if let Some(raw) = build_event(&self.zbus, ev).await {
+                                eprintln!("[engine] candidate: {:?} / {:?}", raw.label_path, raw.discovered_shortcut);
+                                candidate = Some(Candidate {
+                                    item_sender: sender,
+                                    item_path:   path,
+                                    event:       raw,
+                                });
+                            }
+                        }
+
+                        (State::Selected | State::Focused, false) => {
+                            let is_our_item = candidate.as_ref().map_or(false, |c| {
+                                c.item_sender == sender && c.item_path == path
+                            });
+                            if is_our_item {
+                                if let Some(c) = candidate.take() {
+                                    let dtx = debounce_tx.clone();
+                                    tokio::spawn(async move {
+                                        tokio::time::sleep(Duration::from_millis(100)).await;
+                                        let _ = dtx.send(c.event).await;
+                                    });
+                                }
+                            }
+                        }
+
+                        _ => {}
+                    }
+                }
+
+                Some(deselected_event) = debounce_rx.recv() => {
+                    if candidate.is_none() {
+                        eprintln!("[engine] debounce commit — emitting hint");
+                        let _ = tx.send(deselected_event).await;
+                    } else {
+                        eprintln!("[engine] debounce discarded (new candidate exists)");
+                    }
+                }
             }
         }
-        eprintln!("[engine] event stream ended after {total} events");
+
+        eprintln!("[engine] event stream ended");
     }
 }
 
@@ -68,42 +125,38 @@ async fn build_event(
     conn: &Connection,
     ev: atspi::events::object::StateChangedEvent,
 ) -> Option<RawActivationEvent> {
-    // Bind to locals so the temporaries outlive the await points below.
     let sender = ev.sender().to_string();
     let path   = ev.path().to_string();
 
-    eprintln!("[build] Focused/Selected event: sender={sender} path={path}");
+    let proxy = accessible(conn, &sender, &path).await?;
 
-    let proxy = match accessible(conn, &sender, &path).await {
-        Some(p) => p,
-        None => { eprintln!("[build] proxy creation failed"); return None; }
-    };
-
-    let role = match proxy.get_role().await {
-        Ok(r) => r,
-        Err(e) => { eprintln!("[build] get_role failed: {e}"); return None; }
-    };
+    let role = proxy.get_role().await.ok()?;
     if !matches!(role, Role::MenuItem | Role::CheckMenuItem | Role::RadioMenuItem) {
         return None;
     }
 
-    // GTK4 exposes shortcuts via the ARIA `keyshortcuts` accessible attribute.
-    // This is more reliable than ActionProxy.get_key_binding for GTK4 apps.
+    // Only track items that are currently visible on screen.  This filters
+    // programmatic state updates (e.g. enabling Redo after an undo executes)
+    // that fire after the menu has already closed.
+    //
+    // Note: gnome-text-editor uses Role::Panel throughout its menu hierarchy
+    // rather than Role::Menu/PopupMenu, so an ancestor-role check does not
+    // work for that app.  State::Showing is the reliable cross-toolkit guard.
+    let states = proxy.get_state().await.unwrap_or_else(|_| StateSet::empty());
+    if !states.contains(State::Showing) {
+        return None;
+    }
+
     let attrs = proxy.get_attributes().await.ok().unwrap_or_default();
     let shortcut_from_attrs = attrs.get("keyshortcuts").and_then(|s| parse_primary_shortcut(s));
 
-    // Item name: GTK4 GtkModelButton stores the label on a child Panel (a GTK4
-    // accessibility bug — text is not propagated to accessible name). Try the
-    // normal paths; if all fail, allow an empty name so we can still show the
-    // shortcut from the attributes.
-    let name = proxy.name().await.ok().unwrap_or_default();
-    let name = if !name.is_empty() {
-        name
-    } else {
-        child_name(conn, &sender, &path).await.unwrap_or_default()
-    };
+    // Try every available AT-SPI2 text source in order of reliability.
+    // gnome-text-editor (and some other GTK4 apps) leave `name()` empty due to
+    // a known GtkModelButton accessibility issue, so we fall through all paths.
+    let name = resolve_item_name(conn, &sender, &path, &proxy, &attrs).await;
 
-    // We need at least a shortcut or a name to produce a useful event.
+    eprintln!("[build] name={name:?} shortcut_attrs={shortcut_from_attrs:?} all_attrs={attrs:?}");
+
     if name.is_empty() && shortcut_from_attrs.is_none() {
         return None;
     }
@@ -114,7 +167,6 @@ async fn build_event(
         walk_menu_path(conn, &sender, &path, name).await
     };
 
-    // Prefer attrs shortcut (free, already fetched) over an extra ActionProxy roundtrip.
     let discovered_shortcut = if shortcut_from_attrs.is_some() {
         shortcut_from_attrs
     } else {
@@ -135,8 +187,45 @@ async fn build_event(
     })
 }
 
-/// Walks up the accessibility parent chain collecting menu-segment names
-/// until a MenuBar, Frame, Window, or Application root is reached.
+/// Tries every available AT-SPI2 path to find a human-readable name for a
+/// menu item.  Returns an empty string if none succeed.
+async fn resolve_item_name(
+    conn:   &Connection,
+    sender: &str,
+    path:   &str,
+    proxy:  &AccessibleProxy<'_>,
+    attrs:  &std::collections::HashMap<String, String>,
+) -> String {
+    // 1. Standard accessible name (most toolkits set this correctly).
+    let n = proxy.name().await.ok().unwrap_or_default();
+    if !n.is_empty() { return n; }
+
+    // 2. ARIA/accessible attributes — some GTK4 apps store the label here
+    //    under keys like "label" or "aria-label".
+    for key in &["label", "aria-label"] {
+        if let Some(v) = attrs.get(*key) {
+            if !v.is_empty() { return v.clone(); }
+        }
+    }
+
+    // 3. Accessible description — occasionally used as the primary label in
+    //    apps that conflate name and description.
+    let d = proxy.description().await.ok().unwrap_or_default();
+    if !d.is_empty() { return d; }
+
+    // 4. AT-SPI2 Text interface directly on this item — some GtkModelButton
+    //    instances implement Text even though they don't set accessible name.
+    if let Ok(t) = text_content(conn, sender, path).await {
+        if !t.is_empty() { return t; }
+    }
+
+    // 5. Recursive child-widget search — GTK4 GtkModelButton stores the
+    //    visible label on a grandchild GtkLabel; we search up to 4 levels.
+    child_name(conn, sender, path).await.unwrap_or_default()
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
 async fn walk_menu_path(
     conn: &Connection,
     sender: &str,
@@ -184,14 +273,10 @@ async fn walk_menu_path(
     segments
 }
 
-/// Parses the primary shortcut from a GTK4 ARIA `keyshortcuts` attribute.
-/// Format is space-separated alternatives: "Control+N Alt+n" — we take the first.
 fn parse_primary_shortcut(s: &str) -> Option<String> {
     s.split_whitespace().next().filter(|t| !t.is_empty()).map(str::to_string)
 }
 
-/// Reads the keyboard shortcut from the AT-SPI2 Action interface (fallback for non-GTK4).
-/// The AT-SPI2 format is "mnemonic;sequence;shortcut" — we want the third field.
 async fn read_keybinding(conn: &Connection, sender: &str, path: &str) -> Option<String> {
     let proxy = ActionProxy::builder(conn)
         .destination(sender)
@@ -207,8 +292,6 @@ async fn read_keybinding(conn: &Connection, sender: &str, path: &str) -> Option<
     Some(shortcut)
 }
 
-/// Gets the application name from the root Application accessible object,
-/// lowercased so it matches the executable names in the shortcut database.
 async fn read_app_identity(conn: &Connection, proxy: &AccessibleProxy<'_>) -> AppIdentity {
     let default = AppIdentity { executable: String::new(), window_title: None, pid: 0 };
 
@@ -230,11 +313,8 @@ async fn read_app_identity(conn: &Connection, proxy: &AccessibleProxy<'_>) -> Ap
     AppIdentity { executable: name, window_title: None, pid: 0 }
 }
 
-/// Walks the subtree of a MenuItem up to `depth` levels deep, trying
-/// `name()`, the AT-SPI2 Text interface, and description() on each node.
-/// GTK4 GtkModelButton stores the visible label on a grandchild Label.
 async fn child_name(conn: &Connection, sender: &str, path: &str) -> Option<String> {
-    subtree_text(conn, sender, path, 3).await
+    subtree_text(conn, sender, path, 4).await
 }
 
 fn subtree_text<'a>(
@@ -255,7 +335,7 @@ async fn subtree_text_inner(
     if depth == 0 { return None; }
     let proxy = accessible(conn, sender, path).await?;
     let count = proxy.child_count().await.ok().unwrap_or(0);
-    eprintln!("[child_name] depth={depth} sender={sender} path={path} count={count}");
+    eprintln!("[child] depth={depth} path={path} child_count={count}");
 
     for i in 0..count.min(8) {
         let child_ref = match proxy.get_child_at_index(i).await {
@@ -267,21 +347,16 @@ async fn subtree_text_inner(
 
         if let Some(child) = accessible(conn, &c_sender, &c_path).await {
             let child_role = child.get_role().await.ok();
-            let name  = child.name().await.ok().unwrap_or_default();
-            let desc  = child.description().await.ok().unwrap_or_default();
-            let attrs = child.get_attributes().await.ok().unwrap_or_default();
-            eprintln!("[child_name]   child[{i}] role={child_role:?} name={name:?} desc={desc:?} attrs={attrs:?}");
+            let name = child.name().await.ok().unwrap_or_default();
+            let desc = child.description().await.ok().unwrap_or_default();
+            eprintln!("[child]   [{i}] role={child_role:?} name={name:?} desc={desc:?}");
 
-            if !name.is_empty()  { return Some(name); }
-            if !desc.is_empty()  { return Some(desc); }
-
-            // AT-SPI2 Text interface (GtkLabel stores text here, not as accessible name)
+            if !name.is_empty() { return Some(name); }
+            if !desc.is_empty() { return Some(desc); }
             if let Ok(text) = text_content(conn, &c_sender, &c_path).await {
-                eprintln!("[child_name]   child[{i}] text={text:?}");
+                eprintln!("[child]   [{i}] text={text:?}");
                 if !text.is_empty() { return Some(text); }
             }
-
-            // Recurse into deeper children
             if let Some(n) = subtree_text(conn, &c_sender, &c_path, depth - 1).await {
                 return Some(n);
             }
@@ -301,7 +376,6 @@ async fn text_content(conn: &Connection, sender: &str, path: &str) -> zbus::Resu
     proxy.get_text(0, -1).await
 }
 
-/// Convenience: build an `AccessibleProxy` from a D-Bus sender name and object path.
 async fn accessible<'c>(conn: &'c Connection, sender: &'c str, path: &'c str) -> Option<AccessibleProxy<'c>> {
     AccessibleProxy::builder(conn)
         .destination(sender)
@@ -313,3 +387,4 @@ async fn accessible<'c>(conn: &'c Connection, sender: &'c str, path: &'c str) ->
         .await
         .ok()
 }
+
