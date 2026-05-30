@@ -52,16 +52,22 @@ impl ShortcutResolver {
             | ElementRole::ContextMenuItem => {
                 // Tier 1: use the shortcut the app already advertised, if present.
                 if let Some(raw) = &event.discovered_shortcut {
-                    return Some(ShortcutMatch {
+                    let m = ShortcutMatch {
                         shortcut_keys: raw.clone(),
                         action_name:   event.label_path.last().cloned().unwrap_or_default(),
                         description:   String::new(),
                         menu_path:     event.label_path.join(" › "),
                         source:        ResolutionSource::Dynamic,
-                    });
+                    };
+                    eprintln!("[resolve] Tier1 shortcut={:?} action={:?}", m.shortcut_keys, m.action_name);
+                    return Some(m);
                 }
                 // Tier 2: database fallback.
-                self.db.lookup_menu(&event.app, &event.label_path, self.platform)
+                let result = self.db.lookup_menu(&event.app, &event.label_path, self.platform);
+                eprintln!("[resolve] app={:?} path={:?} → {:?}",
+                    event.app.executable, event.label_path,
+                    result.as_ref().map(|m| &m.shortcut_keys));
+                result
             }
 
             ElementRole::SemanticElement { role, context } => {

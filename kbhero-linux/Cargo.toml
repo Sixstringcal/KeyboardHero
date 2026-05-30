@@ -7,3 +7,10 @@ authors.workspace = true
 [dependencies]
 kbhero-core = { workspace = true }
 tokio       = { workspace = true }
+thiserror   = { workspace = true }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+atspi        = { version = "0.30", features = ["tokio"] }
+zbus         = { version = "5", features = ["tokio"], default-features = false }
+gtk4         = "0.11"
+futures-lite = "2"

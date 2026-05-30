@@ -14,6 +14,9 @@ tokio       = { workspace = true }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 kbhero-linux = { path = "../kbhero-linux" }
+atspi        = { version = "0.30", features = ["tokio"] }
+zbus         = { version = "5", features = ["tokio"], default-features = false }
+futures-lite = "2"
 
 [target.'cfg(target_os = "windows")'.dependencies]
 kbhero-windows = { path = "../kbhero-windows" }
